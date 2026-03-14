@@ -66,8 +66,49 @@ function buildEmbed(scriptUrl) {
   return `<script src="${scriptUrl}" defer></script>`;
 }
 
+function getDefaultLogoDataUrl() {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="360" height="120" viewBox="0 0 360 120" fill="none">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#60A5FA"/>
+        <stop offset="100%" stop-color="#06B6D4"/>
+      </linearGradient>
+      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#2563EB"/>
+        <stop offset="100%" stop-color="#0F172A"/>
+      </linearGradient>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.28"/>
+      </filter>
+    </defs>
+
+    <g filter="url(#shadow)">
+      <rect x="8" y="14" width="344" height="92" rx="22" fill="rgba(255,255,255,0.06)"/>
+    </g>
+
+    <g transform="translate(22 24)">
+      <rect x="0" y="0" width="72" height="72" rx="18" fill="url(#g2)"/>
+      <rect x="13" y="46" width="10" height="14" rx="3" fill="#7DD3FC"/>
+      <rect x="28" y="35" width="10" height="25" rx="3" fill="#67E8F9"/>
+      <rect x="43" y="23" width="10" height="37" rx="3" fill="#22D3EE"/>
+      <path d="M10 50 C26 44, 38 34, 57 16" stroke="url(#g1)" stroke-width="8" stroke-linecap="round"/>
+      <path d="M49 15 L59 14 L57 24" fill="url(#g1)"/>
+      <circle cx="59" cy="14" r="3" fill="#E0F2FE"/>
+    </g>
+
+    <g transform="translate(108 24)">
+      <text x="0" y="29" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="800" letter-spacing="1">SEO</text>
+      <text x="0" y="60" fill="url(#g1)" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" letter-spacing="1">TRAFFIC</text>
+      <text x="0" y="80" fill="#CBD5E1" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="2.2">SMART VISIBILITY</text>
+    </g>
+  </svg>`.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function buildClientScript(config) {
-  const logo = config.logo || "https://i.ibb.co/5QmvdpH/logo.png";
+  const logo = config.logo || getDefaultLogoDataUrl();
   const waitTime = Number(config.seconds || 90);
 
   return `
@@ -82,13 +123,19 @@ function buildClientScript(config) {
     var wrapper = document.createElement("div");
     wrapper.innerHTML = \`
       <div id="API_SEOTRAFFIC">
-        <div id="traffic_box">
-          <div class="logo_st">
-            <img src="${logo}" alt="Logo" />
-          </div>
+        <div class="st-logo-wrap">
+          <img class="st-logo" src="${logo}" alt="SEO Traffic Logo" />
+        </div>
+
+        <div class="st-content">
+          <div class="st-title">SEO TRAFFIC</div>
+          <div id="stHint" class="st-status">Nhấn nút để lấy mã</div>
+          <div id="countdown" class="st-status" style="display:none;"></div>
+          <div id="result" class="st-status success" style="display:none;"></div>
+        </div>
+
+        <div class="st-action">
           <button id="getKeyBtn">LẤY MÃ</button>
-          <div id="countdown" style="display:none;"></div>
-          <div id="result" style="display:none;"></div>
         </div>
       </div>
     \`;
@@ -98,78 +145,136 @@ function buildClientScript(config) {
     var style = document.createElement("style");
     style.textContent = \`
       #API_SEOTRAFFIC{
-        margin-bottom:30px;
-        background:#fff;
-        border:1px solid rgba(129,0,0,0.12);
-        border-radius:12px;
-        padding:8px 12px;
-        display:inline-block;
-        box-shadow:0 3px 10px rgba(255,77,77,0.3);
-        z-index:999999;
-        max-width:100%;
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 999999;
+        width: min(480px, calc(100vw - 24px));
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(10, 19, 44, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+        color: #fff;
+        animation: stFadeUp .35s ease;
       }
-      #traffic_box{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap:wrap;
+
+      @keyframes stFadeUp{
+        from{
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to{
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
-      .logo_st{
-        width:100px;
-        height:40px;
-        border-radius:50%;
-        overflow:hidden;
-        flex-shrink:0;
+
+      .st-logo-wrap{
+        width: 138px;
+        height: 46px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      .logo_st img{
-        width:100%;
-        height:100%;
-        object-fit:cover;
+
+      .st-logo{
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
       }
+
+      .st-content{
+        flex: 1;
+        min-width: 0;
+      }
+
+      .st-title{
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1.1px;
+        color: #ffffff;
+        margin-bottom: 4px;
+      }
+
+      .st-status{
+        font-size: 13px;
+        line-height: 1.45;
+        color: #d1d5db;
+        word-break: break-word;
+      }
+
+      .st-status.success{
+        color: #86efac;
+        font-weight: 700;
+      }
+
+      .st-action{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
       #getKeyBtn{
-        font-size:13px;
-        color:#fff;
-        font-weight:bold;
-        padding:6px 12px;
-        background:#0080FF;
-        border-radius:6px;
-        border:none;
-        cursor:pointer;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 11px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #06b6d4);
+        box-shadow: 0 10px 20px rgba(37,99,235,0.28);
+        transition: transform .15s ease, opacity .15s ease;
+        white-space: nowrap;
       }
-      #countdown{
-        font-size:12px;
-        font-weight:bold;
-        color:#333;
+
+      #getKeyBtn:hover{
+        transform: translateY(-1px);
+        opacity: .96;
       }
-      #result{
-        font-size:12px;
-        font-weight:bold;
-        color:#00a651;
-        word-break:break-all;
+
+      #getKeyBtn:active{
+        transform: translateY(0);
       }
-      @media(max-width:600px){
+
+      @media(max-width: 640px){
         #API_SEOTRAFFIC{
-          width:100%;
-          text-align:center;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          width: auto;
+          padding: 12px;
+          gap: 12px;
+          border-radius: 16px;
         }
-        #traffic_box{
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          gap:12px;
+
+        .st-logo-wrap{
+          width: 112px;
+          height: 40px;
         }
+
+        .st-title{
+          font-size: 12px;
+        }
+
+        .st-status{
+          font-size: 12px;
+        }
+
         #getKeyBtn{
-          font-size:12px;
-          color:#fff;
-          font-weight:bold;
-          padding:6px 12px;
-          background:#ff4d4d;
-          border-radius:6px;
-          border:none;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          justify-content:center;
+          padding: 10px 14px;
+          font-size: 12px;
+          border-radius: 10px;
         }
       }
     \`;
@@ -188,10 +293,13 @@ function buildClientScript(config) {
     var button = document.getElementById("getKeyBtn");
     var countdown = document.getElementById("countdown");
     var result = document.getElementById("result");
-    if (!button || !countdown || !result) return;
+    var hint = document.getElementById("stHint");
+
+    if (!button || !countdown || !result || !hint) return;
 
     button.onclick = function () {
       button.style.display = "none";
+      hint.style.display = "none";
       countdown.style.display = "block";
 
       var time = ${waitTime};
@@ -359,7 +467,7 @@ function toolPage() {
           </div>
           <div>
             <label>Logo URL (tùy chọn)</label>
-            <input id="logo" placeholder="https://..." />
+            <input id="logo" placeholder="Để trống sẽ dùng logo SEO Traffic mặc định" />
           </div>
         </div>
 
