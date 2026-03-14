@@ -314,6 +314,10 @@ function toolPage() {
       word-break:break-all;
       white-space:pre-wrap;
     }
+    button:disabled{
+      opacity:.7;
+      cursor:not-allowed;
+    }
     @media(max-width:900px){
       .grid{grid-template-columns:1fr}
       .row{grid-template-columns:1fr}
@@ -411,17 +415,40 @@ function toolPage() {
   </div>
 
   <script>
-    async function copyText(text){
-      if(!text || text === "—") return;
-      await navigator.clipboard.writeText(text);
+    function cleanCopyText(text){
+      return String(text || "")
+        .replace(/\\s+/g, " ")
+        .trim();
+    }
+
+    async function copyText(text, button){
+      const clean = cleanCopyText(text);
+      if(!clean || clean === "—") return;
+
+      try{
+        await navigator.clipboard.writeText(clean);
+
+        if(button){
+          const oldText = button.textContent;
+          button.textContent = "ĐÃ COPY";
+          button.disabled = true;
+
+          setTimeout(function(){
+            button.textContent = oldText;
+            button.disabled = false;
+          }, 1200);
+        }
+      }catch(e){
+        alert("Copy thất bại, trình duyệt chặn clipboard.");
+      }
     }
 
     document.getElementById("copyUrl").onclick = function(){
-      copyText(document.getElementById("urlBox").textContent);
+      copyText(document.getElementById("urlBox").textContent, this);
     };
 
     document.getElementById("copyEmbed").onclick = function(){
-      copyText(document.getElementById("embedBox").textContent);
+      copyText(document.getElementById("embedBox").textContent, this);
     };
 
     document.getElementById("clearBtn").onclick = function(){
@@ -442,21 +469,28 @@ function toolPage() {
 
       const adminKey = document.getElementById("admin_key").value.trim();
 
-      const res = await fetch("/admin/create", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "authorization": "Bearer " + adminKey
-        },
-        body: JSON.stringify(payload)
-      });
+      try{
+        const res = await fetch("/admin/create", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "authorization": "Bearer " + adminKey
+          },
+          body: JSON.stringify(payload)
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      document.getElementById("jsonBox").value = JSON.stringify(data, null, 2);
-      document.getElementById("codeBox").textContent = data.code || "—";
-      document.getElementById("urlBox").textContent = data.script_url || "—";
-      document.getElementById("embedBox").textContent = data.embed || "—";
+        document.getElementById("jsonBox").value = JSON.stringify(data, null, 2);
+        document.getElementById("codeBox").textContent = data.code || "—";
+        document.getElementById("urlBox").textContent = data.script_url || "—";
+        document.getElementById("embedBox").textContent = data.embed || "—";
+      }catch(e){
+        document.getElementById("jsonBox").value = JSON.stringify({
+          ok: false,
+          error: "Request failed"
+        }, null, 2);
+      }
     };
   </script>
 </body>
