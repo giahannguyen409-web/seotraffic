@@ -1,37 +1,90 @@
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=UTF-8",
+      "cache-control": "no-store"
+    }
+  });
+}
 
-    if (url.pathname === "/traffic.js") {
-      const js = `
+function text(data, status = 200, contentType = "text/plain; charset=UTF-8") {
+  return new Response(data, {
+    status,
+    headers: {
+      "content-type": contentType,
+      "cache-control": "no-store"
+    }
+  });
+}
+
+function escapeHtml(str = "") {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getBearerToken(request) {
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return "";
+  return auth.slice(7).trim();
+}
+
+function randomPart(len = 4) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+function generateLicense(prefix = "YBC-") {
+  return `${prefix}${randomPart(4)}${randomPart(4)}`;
+}
+
+function getHostnameFromReferer(referer) {
+  if (!referer) return "";
+  try {
+    return new URL(referer).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function isExpired(dateStr) {
+  if (!dateStr) return false;
+  const now = new Date();
+  const exp = new Date(dateStr + "T23:59:59Z");
+  return now > exp;
+}
+
+function buildEmbed(scriptUrl) {
+  return `<script src="${scriptUrl}" defer></script>`;
+}
+
+function buildClientScript(config) {
+  const logo = config.logo || "https://i.ibb.co/5QmvdpH/logo.png";
+  const waitTime = Number(config.seconds || 90);
+
+  return `
 (function () {
   if (window.__SEOTRAFFIC_LOADED__) return;
   window.__SEOTRAFFIC_LOADED__ = true;
 
   document.addEventListener("DOMContentLoaded", function () {
-    // ===== DOMAIN ĐƯỢC PHÉP =====
-    var allowedDomains = [
-      "onepunchmantruyen.com",
-      "www.onepunchmantruyen.com"
-    ];
-
-    if (!allowedDomains.includes(location.hostname)) {
-      return;
-    }
-
-    // ===== CHỈ CHẠY KHI TỪ GOOGLE =====
     var ref = (document.referrer || "").toLowerCase();
-    if (!ref.includes("google.")) {
-      return;
-    }
+    if (!ref.includes("google.")) return;
 
-    // ===== TẠO HTML =====
     var wrapper = document.createElement("div");
     wrapper.innerHTML = \`
       <div id="API_SEOTRAFFIC">
         <div id="traffic_box">
           <div class="logo_st">
-            <img src="https://hzbacklinks.shop/logo.png" alt="Logo" />
+            <img src="${logo}" alt="Logo" />
           </div>
           <button id="getKeyBtn">LẤY MÃ</button>
           <div id="countdown" style="display:none;"></div>
@@ -42,7 +95,6 @@ export default {
 
     document.body.appendChild(wrapper.firstElementChild);
 
-    // ===== CSS =====
     var style = document.createElement("style");
     style.textContent = \`
       #API_SEOTRAFFIC{
@@ -56,14 +108,12 @@ export default {
         z-index:999999;
         max-width:100%;
       }
-
       #traffic_box{
         display:flex;
         align-items:center;
         gap:10px;
         flex-wrap:wrap;
       }
-
       .logo_st{
         width:100px;
         height:40px;
@@ -71,13 +121,11 @@ export default {
         overflow:hidden;
         flex-shrink:0;
       }
-
       .logo_st img{
         width:100%;
         height:100%;
         object-fit:cover;
       }
-
       #getKeyBtn{
         font-size:13px;
         color:#fff;
@@ -88,33 +136,28 @@ export default {
         border:none;
         cursor:pointer;
       }
-
       #countdown{
         font-size:12px;
         font-weight:bold;
         color:#333;
       }
-
       #result{
         font-size:12px;
         font-weight:bold;
         color:#00a651;
         word-break:break-all;
       }
-
       @media(max-width:600px){
         #API_SEOTRAFFIC{
           width:100%;
           text-align:center;
         }
-
         #traffic_box{
           display:flex;
           align-items:center;
           justify-content:center;
           gap:12px;
         }
-
         #getKeyBtn{
           font-size:12px;
           color:#fff;
@@ -132,7 +175,6 @@ export default {
     \`;
     document.head.appendChild(style);
 
-    // ===== RANDOM KEY =====
     function generateKey() {
       var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       var part = function () {
@@ -140,23 +182,19 @@ export default {
           return chars[Math.floor(Math.random() * chars.length)];
         }).join("");
       };
-
       return "Nhập mã page bất kỳ-" + part() + "-" + part();
     }
 
-    // ===== SCRIPT CHÍNH =====
-    var waitTime = 10;
     var button = document.getElementById("getKeyBtn");
     var countdown = document.getElementById("countdown");
     var result = document.getElementById("result");
-
     if (!button || !countdown || !result) return;
 
     button.onclick = function () {
       button.style.display = "none";
       countdown.style.display = "block";
 
-      var time = waitTime;
+      var time = ${waitTime};
       countdown.innerHTML = "Vui lòng chờ: " + time + "s";
 
       var timer = setInterval(function () {
@@ -173,29 +211,369 @@ export default {
     };
   });
 })();
-      `;
+`;
+}
 
-      return new Response(js, {
+function toolPage() {
+  return `<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YBC Traffic Tool</title>
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,sans-serif;
+      background:linear-gradient(135deg,#07142e,#0b1f4f,#083b39);
+      color:#fff;
+      min-height:100vh;
+      padding:30px;
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+    }
+    .title{
+      font-size:24px;
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .sub{
+      color:#d6def8;
+      margin-bottom:24px;
+      line-height:1.6;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1.2fr 1fr;
+      gap:20px;
+    }
+    .card{
+      background:rgba(15,22,53,.75);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:20px;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+    }
+    label{
+      display:block;
+      font-size:14px;
+      margin:14px 0 8px;
+      color:#dfe7ff;
+    }
+    input,select,textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:#1a2342;
+      color:#fff;
+      padding:14px;
+      outline:none;
+      font-size:15px;
+    }
+    textarea{min-height:140px;resize:vertical}
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .btns{
+      display:flex;
+      gap:12px;
+      margin-top:18px;
+      flex-wrap:wrap;
+    }
+    button{
+      border:none;
+      border-radius:12px;
+      padding:14px 18px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:700;
+    }
+    .primary{background:#2e7df7;color:#fff}
+    .muted{background:#1f2a4f;color:#fff}
+    .copy{background:#1f8f4d;color:#fff;width:160px}
+    .box{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:16px;
+      padding:14px;
+      margin-top:14px;
+    }
+    .small{
+      font-size:13px;
+      color:#d6def8;
+      line-height:1.7;
+      margin-top:14px;
+    }
+    .mono{
+      font-family:Consolas,monospace;
+      word-break:break-all;
+      white-space:pre-wrap;
+    }
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">YBC Traffic Tool</div>
+    <div class="sub">
+      Tạo code theo domain khách + seconds + logo + prefix. Sau khi tạo sẽ ra license, script URL và embed code.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Tạo code</h3>
+
+        <div class="row">
+          <div>
+            <label>ADMIN_KEY (Bearer)</label>
+            <input id="admin_key" placeholder="Nhập ADMIN_KEY để tạo mã" />
+          </div>
+          <div>
+            <label>Domain khách</label>
+            <input id="domain" placeholder="vd: thamtuconan.net" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Seconds</label>
+            <select id="seconds">
+              <option value="60">60</option>
+              <option value="90" selected>90</option>
+              <option value="150">150</option>
+              <option value="180">180</option>
+              <option value="300">300</option>
+            </select>
+          </div>
+          <div>
+            <label>Logo URL (tùy chọn)</label>
+            <input id="logo" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Key Prefix (tùy chọn)</label>
+            <input id="prefix" value="YBC-" />
+          </div>
+          <div>
+            <label>Hạn dùng (YYYY-MM-DD, tùy chọn)</label>
+            <input id="expires" placeholder="2026-12-31" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="createBtn">TẠO CODE</button>
+          <button class="muted" id="clearBtn">XÓA KẾT QUẢ</button>
+        </div>
+
+        <div class="small">
+          • Script chỉ chạy đúng domain đã đăng ký.<br/>
+          • Mở trực tiếp file JS có thể bị chặn nếu thiếu Referer.<br/>
+          • Domain phải nhập dạng không có http/https.
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Kết quả</h3>
+
+        <div class="box">
+          <div>Code</div>
+          <div id="codeBox" class="mono">—</div>
+        </div>
+
+        <div class="box">
+          <div>Script URL</div>
+          <div id="urlBox" class="mono">—</div>
+          <div class="btns"><button class="copy" id="copyUrl">COPY URL</button></div>
+        </div>
+
+        <div class="box">
+          <div>Embed</div>
+          <div id="embedBox" class="mono">—</div>
+          <div class="btns"><button class="copy" id="copyEmbed">COPY EMBED</button></div>
+        </div>
+
+        <div class="box">
+          <div>JSON response</div>
+          <textarea id="jsonBox" readonly placeholder="JSON sẽ hiện ở đây"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function copyText(text){
+      if(!text || text === "—") return;
+      await navigator.clipboard.writeText(text);
+    }
+
+    document.getElementById("copyUrl").onclick = function(){
+      copyText(document.getElementById("urlBox").textContent);
+    };
+
+    document.getElementById("copyEmbed").onclick = function(){
+      copyText(document.getElementById("embedBox").textContent);
+    };
+
+    document.getElementById("clearBtn").onclick = function(){
+      document.getElementById("codeBox").textContent = "—";
+      document.getElementById("urlBox").textContent = "—";
+      document.getElementById("embedBox").textContent = "—";
+      document.getElementById("jsonBox").value = "";
+    };
+
+    document.getElementById("createBtn").onclick = async function(){
+      const payload = {
+        domain: document.getElementById("domain").value.trim(),
+        seconds: Number(document.getElementById("seconds").value || 90),
+        logo: document.getElementById("logo").value.trim(),
+        prefix: document.getElementById("prefix").value.trim() || "YBC-",
+        expires: document.getElementById("expires").value.trim()
+      };
+
+      const adminKey = document.getElementById("admin_key").value.trim();
+
+      const res = await fetch("/admin/create", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "authorization": "Bearer " + adminKey
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      document.getElementById("jsonBox").value = JSON.stringify(data, null, 2);
+      document.getElementById("codeBox").textContent = data.code || "—";
+      document.getElementById("urlBox").textContent = data.script_url || "—";
+      document.getElementById("embedBox").textContent = data.embed || "—";
+    };
+  </script>
+</body>
+</html>`;
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/tool") {
+      return text(toolPage(), 200, "text/html; charset=UTF-8");
+    }
+
+    if (url.pathname === "/admin/create" && request.method === "POST") {
+      const token = getBearerToken(request);
+      if (!token || token !== env.ADMIN_KEY) {
+        return json({ ok: false, error: "Unauthorized" }, 401);
+      }
+
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ ok: false, error: "Invalid JSON body" }, 400);
+      }
+
+      const domain = String(body.domain || "").trim().toLowerCase();
+      const seconds = Number(body.seconds || 90);
+      const logo = String(body.logo || "").trim();
+      const prefix = String(body.prefix || "YBC-").trim();
+      const expires = String(body.expires || "").trim();
+
+      if (!domain) {
+        return json({ ok: false, error: "Thiếu domain" }, 400);
+      }
+
+      if (!/^[a-z0-9.-]+$/.test(domain)) {
+        return json({ ok: false, error: "Domain không hợp lệ" }, 400);
+      }
+
+      if (![60, 90, 150, 180, 300].includes(seconds)) {
+        return json({ ok: false, error: "Seconds không hợp lệ" }, 400);
+      }
+
+      const code = generateLicense(prefix);
+      const record = {
+        active: true,
+        domain,
+        seconds,
+        logo,
+        prefix,
+        expires,
+        createdAt: new Date().toISOString()
+      };
+
+      await env.seo_traffic.put(code, JSON.stringify(record));
+
+      const scriptUrl = `${url.origin}/traffic.js?lic=${encodeURIComponent(code)}`;
+      const embed = buildEmbed(scriptUrl);
+
+      return json({
+        ok: true,
+        code,
+        script_url: scriptUrl,
+        embed,
+        data: record
+      });
+    }
+
+    if (url.pathname === "/traffic.js") {
+      const licenseKey = (url.searchParams.get("lic") || "").trim();
+      if (!licenseKey) {
+        return text("// missing license", 403, "application/javascript; charset=UTF-8");
+      }
+
+      const raw = await env.seo_traffic.get(licenseKey);
+      if (!raw) {
+        return text("// invalid license", 403, "application/javascript; charset=UTF-8");
+      }
+
+      let license;
+      try {
+        license = JSON.parse(raw);
+      } catch {
+        return text("// bad license data", 500, "application/javascript; charset=UTF-8");
+      }
+
+      if (!license.active) {
+        return text("// inactive license", 403, "application/javascript; charset=UTF-8");
+      }
+
+      if (isExpired(license.expires)) {
+        return text("// expired license", 403, "application/javascript; charset=UTF-8");
+      }
+
+      const referer = request.headers.get("Referer") || "";
+      const refererHost = getHostnameFromReferer(referer);
+
+      const allowed = [license.domain, "www." + license.domain].map(v => String(v).toLowerCase());
+      if (!refererHost || !allowed.includes(refererHost)) {
+        return text("// domain not allowed", 403, "application/javascript; charset=UTF-8");
+      }
+
+      return new Response(buildClientScript(license), {
         headers: {
           "content-type": "application/javascript; charset=UTF-8",
-          "cache-control": "public, max-age=300"
+          "cache-control": "private, max-age=300",
+          "vary": "Referer"
         }
       });
     }
 
     if (url.pathname === "/") {
-      return new Response("hzbacklinks.shop worker is running", {
-        headers: {
-          "content-type": "text/plain; charset=UTF-8"
-        }
-      });
+      return text("hzbacklinks.shop worker is running");
     }
 
-    return new Response("Not found", {
-      status: 404,
-      headers: {
-        "content-type": "text/plain; charset=UTF-8"
-      }
-    });
+    return text("Not found", 404);
   }
 };
