@@ -42,7 +42,7 @@ function randomPart(len = 4) {
   return out;
 }
 
-function generateLicense(prefix = "YBC-") {
+function generateLicense(prefix = "SEO-") {
   return `${prefix}${randomPart(4)}${randomPart(4)}`;
 }
 
@@ -220,7 +220,7 @@ function toolPage() {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YBC Traffic Tool</title>
+  <title>SEO Traffic Tool</title>
   <style>
     *{box-sizing:border-box}
     body{
@@ -322,7 +322,7 @@ function toolPage() {
 </head>
 <body>
   <div class="wrap">
-    <div class="title">YBC Traffic Tool</div>
+    <div class="title">SEO Traffic Tool</div>
     <div class="sub">
       Tạo code theo domain khách + seconds + logo + prefix. Sau khi tạo sẽ ra license, script URL và embed code.
     </div>
@@ -361,8 +361,8 @@ function toolPage() {
 
         <div class="row">
           <div>
-            <label>Key Prefix (tùy chọn)</label>
-            <input id="prefix" value="YBC-" />
+            <label>Key Prefix (tùy chọn, mặc định SEO-)</label>
+            <input id="prefix" value="SEO-" />
           </div>
           <div>
             <label>Hạn dùng (YYYY-MM-DD, tùy chọn)</label>
@@ -436,7 +436,7 @@ function toolPage() {
         domain: document.getElementById("domain").value.trim(),
         seconds: Number(document.getElementById("seconds").value || 90),
         logo: document.getElementById("logo").value.trim(),
-        prefix: document.getElementById("prefix").value.trim() || "YBC-",
+        prefix: document.getElementById("prefix").value.trim() || "SEO-",
         expires: document.getElementById("expires").value.trim()
       };
 
@@ -487,7 +487,7 @@ export default {
       const domain = String(body.domain || "").trim().toLowerCase();
       const seconds = Number(body.seconds || 90);
       const logo = String(body.logo || "").trim();
-      const prefix = String(body.prefix || "YBC-").trim();
+      const prefix = String(body.prefix || "SEO-").trim();
       const expires = String(body.expires || "").trim();
 
       if (!domain) {
