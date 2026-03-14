@@ -140,16 +140,17 @@ function buildClientScript(config) {
       </div>
     \`;
 
-    document.body.appendChild(wrapper.firstElementChild);
+    var widget = wrapper.firstElementChild;
+    document.body.appendChild(widget);
 
     var style = document.createElement("style");
     style.textContent = \`
       #API_SEOTRAFFIC{
-        position: fixed;
-        right: 20px;
-        bottom: 20px;
-        z-index: 999999;
-        width: min(480px, calc(100vw - 24px));
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 520px;
+        margin: 20px auto 0;
         display: flex;
         align-items: center;
         gap: 14px;
@@ -159,20 +160,8 @@ function buildClientScript(config) {
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255,255,255,0.10);
-        box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.18);
         color: #fff;
-        animation: stFadeUp .35s ease;
-      }
-
-      @keyframes stFadeUp{
-        from{
-          opacity: 0;
-          transform: translateY(16px);
-        }
-        to{
-          opacity: 1;
-          transform: translateY(0);
-        }
       }
 
       .st-logo-wrap{
@@ -249,10 +238,9 @@ function buildClientScript(config) {
 
       @media(max-width: 640px){
         #API_SEOTRAFFIC{
-          left: 12px;
-          right: 12px;
-          bottom: 12px;
-          width: auto;
+          width: 100%;
+          max-width: 100%;
+          margin: 16px auto 0;
           padding: 12px;
           gap: 12px;
           border-radius: 16px;
@@ -321,6 +309,7 @@ function buildClientScript(config) {
 })();
 `;
 }
+
 
 function toolPage() {
   return `<!doctype html>
