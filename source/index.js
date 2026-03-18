@@ -449,6 +449,7 @@ function toolPage() {
             <select id="seconds">
               <option value="60">60</option>
               <option value="90" selected>90</option>
+              <option value="120">120</option>
               <option value="150">150</option>
               <option value="180">180</option>
               <option value="300">300</option>
@@ -629,7 +630,7 @@ export default {
         return json({ ok: false, error: "Domain không hợp lệ" }, 400);
       }
 
-      if (![60, 90, 150, 180, 300].includes(seconds)) {
+      if (![60, 90, 120, 150, 180, 300].includes(seconds)) {
         return json({ ok: false, error: "Seconds không hợp lệ" }, 400);
       }
 
